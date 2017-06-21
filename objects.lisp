@@ -27,29 +27,66 @@
     (#p"splat.png")
   :mag-filter :nearest)
 
+(define-asset (shootman gun) texture
+    (#p"gun.png")
+  :mag-filter :nearest)
+
 (define-asset (shootman 32x) mesh
     ((make-rectangle 32 32)))
 
 (define-asset (shootman 16x) mesh
     ((make-rectangle 16 16)))
 
-(define-shader-subject game-entity (sprite-subject located-entity axis-rotated-entity)
+(defun update-gun (entity target)
+  (let ((dir (nvunit (v- target
+                         (location entity)))))
+    (setf (angle (gun entity)) (atan (vy dir) (if (eql :left (direction entity))
+                                                  (- (vx dir))
+                                                  (vx dir))))))
+
+(define-shader-subject base-entity (sprite-subject located-entity axis-rotated-entity)
   ()
   (:default-initargs
    :size (vec 32 32)
    :vertex-array (asset 'shootman '32x)
    :axis +vz+))
 
+(define-shader-subject game-entity (base-entity)
+  ((direction :initarg :direction :initform :right :accessor direction)
+   (gun :initform (make-instance 'gun) :accessor gun)))
+
+(defmethod load progn ((game-entity game-entity))
+  (load (gun game-entity)))
+
+(defmethod register-object-for-pass :after (pass (game-entity game-entity))
+  (register-object-for-pass pass (gun game-entity)))
+
+(defmethod paint ((game-entity game-entity) target)
+  (when (eql :left (direction game-entity))
+    (scale-by -1 1 1))
+  (call-next-method))
+
+(defmethod paint :after ((game-entity game-entity) target)
+  (paint (gun game-entity) target))
+
 (define-subject solid ()
   ())
 
-(define-shader-subject splat (game-entity)
+(define-shader-subject gun (base-entity pivoted-entity)
+  ()
+  (:default-initargs
+   :pivot (vec 13 3 0)
+   :size (vec 16 16)
+   :texture (asset 'shootman 'gun)
+   :vertex-array (asset 'shootman '16x)))
+
+(define-shader-subject splat (base-entity)
   ()
   (:default-initargs
    :texture (asset 'shootman 'splat)
    :angle (random (* 2 PI))))
 
-(define-shader-subject bullet (game-entity)
+(define-shader-subject bullet (base-entity)
   ((vel :initarg :velocity :accessor vel)
    (affinity :initarg :affinity :accessor affinity))
   (:default-initargs
@@ -63,7 +100,7 @@
   (for:for ((entity over *loop*))
     (when (and (not (eql bullet entity))
                (not (typep entity (affinity bullet)))
-               (typep entity 'game-entity))
+               (typep entity 'solid))
       (let ((dist (v- (location bullet) (location entity)))
             (w (/ (vx (size entity)) 2))
             (h (/ (vy (size entity)) 2)))
@@ -74,10 +111,12 @@
 
 (defmethod hit (target by))
 
-(define-shader-subject wall (game-entity solid)
+(define-shader-subject wall (sprite-subject located-entity solid)
   ()
   (:default-initargs
    :texture (asset 'shootman 'wall)
+   :size (vec 32 32)
+   :vertex-array (asset 'shootman '32x)
    :orientation :n))
 
 (defmethod shared-initialize :after ((wall wall) slots &key orientation)
@@ -132,15 +171,18 @@
 
 (define-handler (tomato tick) (ev dt)
   (incf (timer tomato) dt)
-  (when (<= (cooldown tomato) (timer tomato))
-    (shoot-at tomato (location (unit :player *loop*))
-              :texture (asset 'shootman 'bullet2)
-              :speed 2)
-    (setf (timer tomato) 0)))
+  (let ((player (unit :player *loop*)))
+    (update-gun tomato (location player))
+    (when (<= (cooldown tomato) (timer tomato))
+      (shoot-at tomato (location player)
+                :texture (asset 'shootman 'bullet2)
+                :speed 2)
+      (setf (timer tomato) 0))))
 
 (define-shader-subject flame (animated-sprite-subject game-entity)
   ((vel :initform (vec 0 0 0) :accessor vel)
-   (health :initarg :health :accessor health))
+   (health :initarg :health :accessor health)
+   (viewing :initform (vec 0 0) :accessor viewing))
   (:default-initargs
    :texture (asset 'shootman 'flame)
    :animations '((0.5 3)
@@ -157,9 +199,11 @@
   (let ((moving NIL))
     (cond ((retained 'key :a)
            (setf moving T)
+           (setf (direction flame) :left)
            (setf (vx (vel flame)) -1.6))
           ((retained 'key :d)
            (setf moving T)
+           (setf (direction flame) :right)
            (setf (vx (vel flame)) +1.6))
           (T
            (setf (vx (vel flame)) 0)))
@@ -183,19 +227,25 @@
             (hit flame entity)
             (return)))))
 
-    (nv+ (location flame) (vel flame))))
+    (nv+ (location flame) (vel flame))
+    (update-gun flame (screen->vec (viewing flame) (width *context*) (height *context*)))))
 
 (define-handler (flame mouse-press) (ev)
-  (shoot-at flame (screen->vec (pos ev) (width *context*) (height *context*))))
+  (shoot-at flame (screen->vec (viewing flame) (width *context*) (height *context*))
+            :speed 5 :spread 10))
+
+(define-handler (flame mouse-move) (ev pos)
+  (setf (viewing flame) pos))
 
 (defun shoot-at (source target &key (spread 5) (speed 3) (texture (asset 'shootman 'bullet)))
   (let* ((direction (nvunit (v- target (location source))))
          (spread (deg->rad (- (random spread) (/ spread 2)))))
     (nvrot direction +vz+ spread)
-    (enter (load (make-instance 'bullet :location (vcopy (location source))
+    (enter (load (make-instance 'bullet :location (v+ (location source) (v* direction 16))
                                         :velocity (nv* direction speed)
                                         :affinity (type-of source)
-                                        :texture texture))
+                                        :texture texture
+                                        :angle (atan (vy direction) (vx direction))))
            *loop*)))
 
 (defmethod hit ((flame flame) (bullet bullet))
