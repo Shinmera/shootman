@@ -27,10 +27,17 @@
     (#p"splat.png")
   :mag-filter :nearest)
 
+(define-asset (shootman 32x) mesh
+    ((make-rectangle 32 32)))
+
+(define-asset (shootman 16x) mesh
+    ((make-rectangle 16 16)))
+
 (define-shader-subject game-entity (sprite-subject located-entity axis-rotated-entity)
   ()
   (:default-initargs
    :size (vec 32 32)
+   :vertex-array (asset 'shootman '32x)
    :axis +vz+))
 
 (define-subject solid ()
@@ -48,6 +55,7 @@
   (:default-initargs
    :texture (asset 'shootman 'bullet)
    :size (vec2 16 16)
+   :vertex-array (asset 'shootman '16x)
    :affinity 'bullet))
 
 (define-handler (bullet tick) (ev)
@@ -96,6 +104,7 @@
 (define-shader-subject ground (sprite-subject located-entity)
   ()
   (:default-initargs
+   :vertex-array (asset 'shootman '32x)
    :texture (asset 'shootman 'wall)
    :tile (alexandria:random-elt
           (list (vec2 3 3) (vec2 3 3) (vec2 3 3) (vec2 3 2) (vec2 2 3)))))
