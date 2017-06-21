@@ -69,10 +69,36 @@
 (define-shader-subject wall (game-entity solid)
   ()
   (:default-initargs
-   :texture (asset 'shootman 'wall)))
+   :texture (asset 'shootman 'wall)
+   :orientation :n))
+
+(defmethod shared-initialize :after ((wall wall) slots &key orientation)
+  (setf (tile wall)
+        (ecase orientation
+          ((NIL) (tile wall))
+          (n  (vec2 0 0))
+          (e  (vec2 1 0))
+          (s  (vec2 1 1))
+          (w  (vec2 0 1))
+          (n> (vec2 2 0))
+          (e> (vec2 3 0))
+          (s> (vec2 3 1))
+          (w> (vec2 2 1))
+          (n< (vec2 0 2))
+          (e< (vec2 1 2))
+          (s< (vec2 1 3))
+          (w< (vec2 0 3))
+          (I  (vec2 2 2)))))
 
 (defmethod hit ((wall wall) (bullet bullet))
   (leave bullet *loop*))
+
+(define-shader-subject ground (sprite-subject located-entity)
+  ()
+  (:default-initargs
+   :texture (asset 'shootman 'wall)
+   :tile (alexandria:random-elt
+          (list (vec2 3 3) (vec2 3 3) (vec2 3 3) (vec2 3 2) (vec2 2 3)))))
 
 (define-shader-subject enemy (game-entity solid)
   ((health :initarg :health :accessor health)
