@@ -6,4 +6,8 @@
                (:file "enemy")
                (:file "player")
                (:file "main"))
-  :depends-on (:trial))
+  :defsystem-depends-on (:deploy)
+  :depends-on (:trial)
+  :build-operation "deploy-op"
+  :build-pathname "shootman"
+  :entry-point "shootman:launch")
