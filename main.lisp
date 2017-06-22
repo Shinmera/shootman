@@ -5,6 +5,12 @@
   (:default-initargs
    :clear-color (vec 0.1 0.1 0.1 1)))
 
+(defmethod initialize-instance :after ((main main) &key)
+  (harmony-simple:start))
+
+(defmethod finalize :after ((main main))
+  (harmony-simple:stop))
+
 (progn
   (defmethod setup-scene ((main main))
     (let ((scene (scene main)))

@@ -34,8 +34,8 @@
    :sound #p"shot.mp3"))
 
 (defmethod shoot ((gun basic-gun) from direction affinity)
-  ;; (setf (harmony:position (harmony-simple:play (sound gun) :sfx))
-  ;;       (list (vx from) (vy from) (vz from)))
+  (setf (harmony:location (harmony-simple:play (sound gun) :sfx))
+        (list (vx from) (vy from) (vz from)))
   (loop repeat (bullet-count gun)
         for phi from (- (/ (bullet-arc gun) 2))
         by (/ (bullet-arc gun) (bullet-count gun))
