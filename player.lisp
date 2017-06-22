@@ -14,7 +14,8 @@
                  (0.5 4 :loop-to 3))
    :animation 0
    :name :player
-   :health 6))
+   :health 6
+   :gun (make-instance 'basic-gun)))
 
 (define-handler (player tick) (ev)
   (when (and (= 1 (animation player))

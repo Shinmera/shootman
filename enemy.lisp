@@ -23,7 +23,8 @@
 (define-shader-subject tomato (enemy)
   ()
   (:default-initargs
-   :texture (asset 'shootman 'tomato)))
+   :texture (asset 'shootman 'tomato)
+   :gun (make-instance 'basic-gun)))
 
 (define-handler (tomato tick) (ev dt)
   (incf (timer tomato) dt)

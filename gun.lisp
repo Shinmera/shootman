@@ -4,10 +4,6 @@
     (#p"bullet.png")
   :mag-filter :nearest)
 
-(define-asset (shootman bullet2) texture
-    (#p"bullet2.png")
-  :mag-filter :nearest)
-
 (define-asset (shootman gun) texture
     (#p"gun.png")
   :mag-filter :nearest)
@@ -21,6 +17,34 @@
    :vertex-array (asset 'shootman '16x)))
 
 (defmethod shoot ((gun gun) from direction affinity))
+
+(define-shader-subject basic-gun (gun)
+  ((bullet-type :initarg :bullet-type :accessor bullet-type)
+   (bullet-count :initarg :bullet-count :accessor bullet-count)
+   (bullet-velocity :initarg :bullet-velocity :accessor bullet-velocity)
+   (bullet-spread :initarg :bullet-spread :accessor bullet-spread)
+   (bullet-arc :initarg :bullet-arc :accessor bullet-arc)
+   (sound :initarg :sound :accessor sound))
+  (:default-initargs
+   :bullet-type 'bullet
+   :bullet-count 1
+   :bullet-velocity 3
+   :bullet-spread 0
+   :bullet-arc 0
+   :sound #p"shot.mp3"))
+
+(defmethod shoot ((gun basic-gun) from direction affinity)
+  ;; (setf (harmony:position (harmony-simple:play (sound gun) :sfx))
+  ;;       (list (vx from) (vy from) (vz from)))
+  (loop repeat (bullet-count gun)
+        for phi from (- (/ (bullet-arc gun) 2))
+        by (/ (bullet-arc gun) (bullet-count gun))
+        for spread = (- (random (bullet-spread gun)) (/ (bullet-spread gun) 2))
+        do (let ((dir (vrot direction +vz+ (deg->rad (+ phi spread)))))
+             (unless (v= 0 dir) (nvunit dir))
+             (make-instance (bullet-type gun)
+                            :location (vcopy from)
+                            :velocity (nv* dir (bullet-velocity gun))))))
 
 (define-shader-subject bullet (base-entity)
   ((vel :initarg :velocity :accessor vel)
@@ -76,8 +100,6 @@
                              (vx dir))))))
 
 (defmethod shoot-at ((gun-carrier gun-carrier) target)
-  (let* ((direction (nvunit (v- target (location gun-carrier))))
-         (spread (deg->rad (- (random spread) (/ spread 2)))))
-    (nvrot direction +vz+ spread)
+  (let ((direction (nvunit (v- target (location gun-carrier)))))
     (shoot (gun gun-carrier) (location gun-carrier) direction
            (if (typep gun-carrier 'enemy) 'enemy 'player))))
