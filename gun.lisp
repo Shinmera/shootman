@@ -31,20 +31,24 @@
    :bullet-velocity 3
    :bullet-spread 0
    :bullet-arc 0
-   :sound #p"shot.mp3"))
+   :sound (pool-path 'shootman #p"shot.mp3")))
 
 (defmethod shoot ((gun basic-gun) from direction affinity)
-  (setf (harmony:location (harmony-simple:play (sound gun) :sfx))
-        (list (vx from) (vy from) (vz from)))
+  ;; (setf (harmony:location (harmony-simple:play (sound gun) :sfx))
+  ;;       (list (vx from) (vy from) (vz from)))
   (loop repeat (bullet-count gun)
-        for phi from (- (/ (bullet-arc gun) 2))
-        by (/ (bullet-arc gun) (bullet-count gun))
-        for spread = (- (random (bullet-spread gun)) (/ (bullet-spread gun) 2))
+        for phi = (- (/ (bullet-arc gun) 2))
+        then (+ phi (/ (bullet-arc gun) (bullet-count gun)))
+        for spread = (if (= 0 (bullet-spread gun))
+                         0
+                         (- (random (bullet-spread gun)) (/ (bullet-spread gun) 2)))
         do (let ((dir (vrot direction +vz+ (deg->rad (+ phi spread)))))
              (unless (v= 0 dir) (nvunit dir))
-             (make-instance (bullet-type gun)
-                            :location (vcopy from)
-                            :velocity (nv* dir (bullet-velocity gun))))))
+             (enter (load (make-instance (bullet-type gun)
+                                         :location (vcopy from)
+                                         :velocity (nv* dir (bullet-velocity gun))
+                                         :affinity affinity))
+                    *loop*))))
 
 (define-shader-subject bullet (base-entity)
   ((vel :initarg :velocity :accessor vel)
@@ -92,9 +96,8 @@
   (paint (gun gun-carrier) target))
 
 (defmethod look-at ((gun-carrier gun-carrier) target)
-  (let ((dir (nvunit (v- target
-                         (location gun-carrier)))))
-    (setf (angle (gun entity))
+  (let ((dir (v- target (location gun-carrier))))
+    (setf (angle (gun gun-carrier))
           (atan (vy dir) (if (eql :left (direction gun-carrier))
                              (- (vx dir))
                              (vx dir))))))
