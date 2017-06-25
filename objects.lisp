@@ -19,5 +19,5 @@
 (define-shader-subject game-entity (base-entity)
   ((direction :initarg :direction :initform :right :accessor direction)))
 
-(define-subject solid ()
+(defclass solid ()
   ())
