@@ -48,6 +48,9 @@
              (cx (/ pw 2)) (cy (/ ph 2))
              (buffer (make-instance 'scene-buffer :width pw :height ph
                                                   :texture-properties '(:min-filter :nearest :mag-filter :nearest))))
+        (enter (make-instance 'ground :vertex-array (change-class (make-rectangle pw ph) 'vertex-array)
+                                      :texture (texture buffer))
+               scene)
         (with-pushed-matrix ((*projection-matrix* :zero)
                              (*view-matrix* :identity)
                              (*model-matrix* :identity))
@@ -58,6 +61,10 @@
                 (case (aref array y x)
                   (-)
                   (_
+                   (when (< (random 100) 2)
+                     (enter (make-instance 'tomato :location (vec (- (vx loc) cx)
+                                                                  (- (vy loc) cy)
+                                                                  0)) scene))
                    (enter (make-instance 'floor-drawable :location loc
                                                          :tile (alexandria:random-elt
                                                                 (list (vec2 3 2)
@@ -70,8 +77,5 @@
                           buffer)
                    (enter (make-instance 'wall :location (v- loc (vec cx cy 0))) scene))))))
           (load buffer)
-          (paint buffer buffer))
-        (enter (make-instance 'ground :vertex-array (change-class (make-rectangle pw ph) 'vertex-array)
-                                      :texture (texture buffer))
-               scene))))
+          (paint buffer buffer)))))
   (maybe-reload-scene))

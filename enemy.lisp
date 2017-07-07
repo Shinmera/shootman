@@ -18,7 +18,8 @@
   (decf (health enemy))
   (when (<= (health enemy) 0)
     (leave enemy *loop*)
-    (enter (load (make-instance 'splat :location (location enemy))) *loop*)))
+    ;; (enter (load (make-instance 'splat :location (location enemy))) *loop*)
+    ))
 
 (define-shader-subject tomato (enemy)
   ()

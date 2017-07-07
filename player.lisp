@@ -54,7 +54,9 @@
             (return)))))
 
     (nv+ (location player) (vel player))
-    (look-at player (screen->vec (viewing player) (width *context*) (height *context*)))))
+    (look-at player (screen->vec (viewing player) (width *context*) (height *context*)))
+    (setf (harmony:location (harmony:segment :sfx harmony-simple:*server*))
+          (list (vx (location player)) (vy (location player)) (vz (location player))))))
 
 (define-handler (player mouse-press) (ev)
   (shoot-at player (screen->vec (viewing player) (width *context*) (height *context*))))

@@ -34,8 +34,9 @@
    :sound (pool-path 'shootman #p"shot.mp3")))
 
 (defmethod shoot ((gun basic-gun) from direction affinity)
-  ;; (setf (harmony:location (harmony-simple:play (sound gun) :sfx))
-  ;;       (list (vx from) (vy from) (vz from)))
+  (harmony-simple:play (sound gun) :sfx
+                       :type 'harmony-mp3:mp3-buffer-source
+                       :location (list (vx from) (vy from) (vz from)))
   (loop repeat (bullet-count gun)
         for phi = (- (/ (bullet-arc gun) 2))
         then (+ phi (/ (bullet-arc gun) (bullet-count gun)))
