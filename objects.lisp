@@ -16,8 +16,10 @@
    :vertex-array (asset 'shootman '32x)
    :axis +vz+))
 
-(define-shader-subject game-entity (base-entity)
-  ((direction :initarg :direction :initform :right :accessor direction)))
-
 (defclass solid ()
   ())
+
+(define-shader-subject game-entity (base-entity solid)
+  ((direction :initarg :direction :initform (vec 1 0) :accessor direction)))
+
+

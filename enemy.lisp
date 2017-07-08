@@ -7,7 +7,7 @@
 (define-shader-subject enemy (gun-carrier solid)
   ((health :initarg :health :accessor health)
    (cooldown :initarg :cooldown :accessor cooldown)
-   (timer :initarg :timer :initform 0 :accessor timer))
+w   (timer :initarg :timer :initform 0 :accessor timer))
   (:default-initargs
    :health 3
    :cooldown 3
@@ -30,7 +30,7 @@
 (define-handler (tomato tick) (ev dt)
   (incf (timer tomato) dt)
   (let ((player (unit :player *loop*)))
-    (look-at tomato (location player))
+    (look-at tomato (v+ (location player) (vel player)))
     (when (<= (cooldown tomato) (timer tomato))
-      (shoot-at tomato (location player))
+      (shoot tomato)
       (setf (timer tomato) 0))))

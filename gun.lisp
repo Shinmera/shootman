@@ -8,6 +8,8 @@
     (#p"gun.png")
   :mag-filter :nearest)
 
+(defgeneric shoot (thing &key &allow-other-keys))
+
 (define-shader-subject gun (base-entity pivoted-entity)
   ()
   (:default-initargs
@@ -16,7 +18,7 @@
    :texture (asset 'shootman 'gun)
    :vertex-array (asset 'shootman '16x)))
 
-(defmethod shoot ((gun gun) from direction affinity))
+(defmethod shoot ((gun gun) &key from direction affinity))
 
 (define-shader-subject basic-gun (gun)
   ((bullet-type :initarg :bullet-type :accessor bullet-type)
@@ -28,12 +30,12 @@
   (:default-initargs
    :bullet-type 'bullet
    :bullet-count 1
-   :bullet-velocity 3
+   :bullet-velocity 4
    :bullet-spread 0
    :bullet-arc 0
    :sound (pool-path 'shootman #p"shot.mp3")))
 
-(defmethod shoot ((gun basic-gun) from direction affinity)
+(defmethod shoot ((gun basic-gun) &key from direction affinity)
   (harmony-simple:play (sound gun) :sfx
                        :type 'harmony-mp3:mp3-buffer-source
                        :location (list (vx from) (vy from) (vz from)))
@@ -43,13 +45,14 @@
         for spread = (if (= 0 (bullet-spread gun))
                          0
                          (- (random (bullet-spread gun)) (/ (bullet-spread gun) 2)))
-        do (let ((dir (vrot direction +vz+ (deg->rad (+ phi spread)))))
+        do (let ((dir (vrot (vxy_ direction) +vz+ (deg->rad (+ phi spread)))))
              (unless (v= 0 dir) (nvunit dir))
-             (enter (load (make-instance (bullet-type gun)
-                                         :location (vcopy from)
-                                         :velocity (nv* dir (bullet-velocity gun))
-                                         :affinity affinity))
-                    *loop*))))
+             (let ((vel (nv* dir (bullet-velocity gun))))
+               (enter (load (make-instance (bullet-type gun)
+                                           :location (v+ from (v* dir 5))
+                                           :velocity vel
+                                           :affinity affinity))
+                      *loop*)))))
 
 (define-shader-subject bullet (base-entity)
   ((vel :initarg :velocity :accessor vel)
@@ -89,21 +92,24 @@
   (register-object-for-pass pass (gun gun-carrier)))
 
 (defmethod paint ((gun-carrier gun-carrier) target)
-  (when (eql :left (direction gun-carrier))
+  (when (< (vx (direction gun-carrier)) 0)
     (scale-by -1 1 1))
   (call-next-method))
 
 (defmethod paint :after ((gun-carrier gun-carrier) target)
   (paint (gun gun-carrier) target))
 
+(defmethod (setf direction) :after (value (gun-carrier gun-carrier))
+  (let ((dir (direction gun-carrier)))
+    (setf (angle (gun gun-carrier))
+          (atan (vy dir) (if (< (vx dir) 0) (- (vx dir)) (vx dir))))))
+
 (defmethod look-at ((gun-carrier gun-carrier) target)
   (let ((dir (v- target (location gun-carrier))))
-    (setf (angle (gun gun-carrier))
-          (atan (vy dir) (if (eql :left (direction gun-carrier))
-                             (- (vx dir))
-                             (vx dir))))))
+    (setf (direction gun-carrier) dir)))
 
-(defmethod shoot-at ((gun-carrier gun-carrier) target)
-  (let ((direction (nvunit (v- target (location gun-carrier)))))
-    (shoot (gun gun-carrier) (location gun-carrier) direction
-           (if (typep gun-carrier 'enemy) 'enemy 'player))))
+(defmethod shoot ((gun-carrier gun-carrier) &key)
+  (shoot (gun gun-carrier)
+         :from (location gun-carrier)
+         :direction (direction gun-carrier)
+         :affinity (if (typep gun-carrier 'enemy) 'enemy 'player)))

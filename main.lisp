@@ -12,6 +12,18 @@
 (defmethod finalize :after ((main main))
   (harmony-simple:stop))
 
+(define-subject %camera (sidescroll-camera)
+  ()
+  (:default-initargs
+   :name :camera
+   :zoom 2.0))
+
+(defmethod setup-perspective :after ((camera %camera) ev)
+  (vsetf (location camera)
+      (/ (width ev) 4)
+      (/ (height ev) 4)
+      -10))
+
 (progn
   (defmethod setup-scene ((main main))
     (let ((scene (scene main)))
@@ -36,10 +48,7 @@
            (-  -  -  -  w< s  s  s  s  s  s  s  s  s< -  -  w< s  s  s  s  s  s<))
        scene)
       (enter (make-instance 'player) scene)
-      (enter (make-instance 'sidescroll-camera :location (vec 200 150 -10)
-                                               :name :camera
-                                               :zoom 2.0
-                                               :target (unit :player scene)) scene)))
+      (enter (make-instance '%camera :target (unit :player scene)) scene)))
 
   (maybe-reload-scene))
 
