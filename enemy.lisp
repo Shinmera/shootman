@@ -7,7 +7,7 @@
 (define-shader-subject enemy (gun-carrier solid)
   ((health :initarg :health :accessor health)
    (cooldown :initarg :cooldown :accessor cooldown)
-w   (timer :initarg :timer :initform 0 :accessor timer))
+   (timer :initarg :timer :initform 0 :accessor timer))
   (:default-initargs
    :health 3
    :cooldown 3
