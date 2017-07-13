@@ -57,7 +57,7 @@
           (orthographic-projection 0 pw 0 ph -10 10)
           (dotimes (x w)
             (dotimes (y h)
-              (let ((loc (vec (* x 32) (* y 32) 0)))
+              (let ((loc (vec (+ 16 (* x 32)) (+ 16 (* y 32)) 0)))
                 (case (aref array y x)
                   (-)
                   (_

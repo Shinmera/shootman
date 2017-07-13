@@ -13,8 +13,7 @@
    :cooldown 3
    :timer (random 3.0)))
 
-(defmethod hit ((enemy enemy) (bullet bullet))
-  (leave bullet *loop*)
+(defmethod hit :after ((bullet bullet) (enemy enemy) hit)
   (decf (health enemy))
   (when (<= (health enemy) 0)
     (leave enemy *loop*)

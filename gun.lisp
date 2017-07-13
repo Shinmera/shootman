@@ -55,8 +55,7 @@
                       *loop*)))))
 
 (define-shader-subject bullet (base-entity)
-  ((vel :initarg :velocity :accessor vel)
-   (affinity :initarg :affinity :accessor affinity))
+  ((affinity :initarg :affinity :accessor affinity))
   (:default-initargs
    :texture (asset 'shootman 'bullet)
    :size (vec2 16 16)
@@ -69,17 +68,34 @@
     (when (and (not (eql bullet entity))
                (not (typep entity (affinity bullet)))
                (typep entity 'solid))
-      (let ((dist (v- (location bullet) (location entity)))
-            (w (/ (vx (size entity)) 2))
-            (h (/ (vy (size entity)) 2)))
-        (when (and (<= (- w) (vx dist) w)
-                   (<= (- h) (vy dist) h))
-          (hit entity bullet)
+      (let ((hit (test-collision bullet entity)))
+        (when hit
+          (hit bullet entity hit)
           (return))))))
 
-(defmethod hit (target by))
+(defmethod test-collision ((a bullet) (b base-entity))
+  (let ((hit (test-segment-vs-aabb
+              (vxy (location a))
+              (v+ (vxy (vel a)) (vxy (vel b)))
+              (vxy (location b))
+              (v/ (size b) 2))))
+    (when hit
+      (setf (hit-a hit) a (hit-b hit) b)
+      hit)))
 
-(defmethod hit ((wall wall) (bullet bullet))
+(defmethod test-collision ((a bullet) (b wall))
+  (let ((hit (test-segment-vs-aabb
+              (vxy (location a))
+              (vxy (vel a))
+              (vxy (location b))
+              (v/ (size b) 2))))
+    (when hit
+      (setf (hit-a hit) a (hit-b hit) b)
+      hit)))
+
+(defmethod hit (target by hit))
+
+(defmethod hit ((bullet bullet) (solid solid) hit)
   (leave bullet *loop*))
 
 (define-shader-subject gun-carrier (game-entity)

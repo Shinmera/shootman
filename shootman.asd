@@ -2,6 +2,7 @@
   :components ((:file "package")
                (:file "objects")
                (:file "map")
+               (:file "collision")
                (:file "gun")
                (:file "enemy")
                (:file "player")
