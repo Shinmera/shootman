@@ -16,7 +16,12 @@
    :texture (asset 'shootman 'wall)))
 
 (defclass wall (located-entity solid)
-  ((size :initform (vec 32 32) :accessor size)))
+  ((size :initform (vec 32 32) :accessor size)
+   (symb :initarg :symb :accessor symb)))
+
+(defmethod print-object ((wall wall) stream)
+  (print-unreadable-object (wall stream :type T)
+    (format stream "~a ~a" (symb wall) (location wall))))
 
 (define-shader-subject ground (vertex-subject textured-subject located-entity)
   ()
@@ -62,9 +67,8 @@
                   (-)
                   (_
                    (when (< (random 100) 2)
-                     (enter (make-instance 'tomato :location (vec (- (vx loc) cx)
-                                                                  (- (vy loc) cy)
-                                                                  0)) scene))
+                     (enter (make-instance 'tomato :location (v- loc (vec cx cy 0)))
+                            scene))
                    (enter (make-instance 'floor-drawable :location loc
                                                          :tile (alexandria:random-elt
                                                                 (list (vec2 3 2)
@@ -75,7 +79,8 @@
                    (enter (make-instance 'floor-drawable :location loc
                                                          :tile (symb->tile (aref array y x)))
                           buffer)
-                   (enter (make-instance 'wall :location (v- loc (vec cx cy 0))) scene))))))
+                   (enter (make-instance 'wall :location (v- loc (vec cx cy 0)) :symb (aref array y x))
+                          scene))))))
           (load buffer)
           (paint buffer buffer)))))
   (maybe-reload-scene))

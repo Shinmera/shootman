@@ -89,16 +89,18 @@
              (vx (move-vel player))
              (vy (move-vel player)))))
 
-  (let ((nearest-hit))
-    (for:for ((entity over *loop*))
-      (when (and (not (eql player entity))
-                 (typep entity 'solid))
-        (let ((hit (test-collision player entity)))
-          (when (and hit (or (not nearest-hit)
-                             (< (hit-time hit) (hit-time nearest-hit))))
-            (setf nearest-hit hit)))))
-    (when nearest-hit
-      (hit (hit-a nearest-hit) (hit-b nearest-hit) nearest-hit)))
+  (let ((nearest-hit NIL))
+    (loop repeat 2
+          do (setf nearest-hit NIL)
+             (for:for ((entity over *loop*))
+               (when (and (not (eql player entity))
+                          (typep entity 'solid))
+                 (let ((hit (test-collision player entity)))
+                   (when (and hit (or (not nearest-hit)
+                                      (< (hit-time hit) (hit-time nearest-hit))))
+                     (setf nearest-hit hit)))))
+          while nearest-hit
+          do (hit (hit-a nearest-hit) (hit-b nearest-hit) nearest-hit)))
 
   (nv+ (location player) (vel player))
   (setf (harmony:location (harmony:segment :sfx harmony-simple:*server*))
@@ -130,8 +132,5 @@
       (setf (animation player) 1))))
 
 (defmethod hit ((player player) (wall wall) hit)
-  (vsetf (location player) (vx (hit-pos hit)) (vy (hit-pos hit)) (vz (location player)))
-  (cond ((/= 0 (vx (hit-normal hit)))
-         (setf (vx (vel player)) 0))
-        ((/= 0 (vy (hit-normal hit)))
-         (setf (vy (vel player)) 0))))
+  (vsetf (location player) (round (vx (hit-pos hit))) (round (vy (hit-pos hit))) (vz (location player)))
+  (vsetf (vel player) (vx (hit-vel hit)) (vy (hit-vel hit)) 0))

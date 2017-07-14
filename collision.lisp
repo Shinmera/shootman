@@ -10,7 +10,29 @@
   (vel (vec 0 0) :type vec2)
   (pos (vec 0 0) :type vec2))
 
-(defun test-segment-vs-aabb (seg-pos seg-vel aabb-pos aabb-size)aswda
+(defun project-vector (a b)
+  (v/ (v* (v. a b) b) (vlength b)))
+
+(defun test-segment-vs-line (seg-pos seg-vel line-a line-b)
+  (declare (type vec2 seg-pos seg-vel line-a line-b))
+  (with-float-traps-masked ()
+    (let* ((dx (- (vx line-a) (vx seg-pos)))
+           (dy (- (vy line-a) (vy seg-pos)))
+           (det (* 2 (- (* (vx line-b) (vy seg-vel))
+                        (* (vy line-b) (vx seg-vel))))))
+      (unless (= 0 det)
+        (let ((u (/ (- (* dy (vx line-b)) (* dx (vy line-b))) det))
+              (v (/ (- (* dy (vx seg-vel)) (* dx (vy seg-vel))) det)))
+          (when (and (<= 0 u 1)
+                     (<= 0 v 1))
+            (let* ((time u)
+                   (vel (v* seg-vel time))
+                   (pos (v+ seg-pos vel)))
+              (make-hit :time time
+                        :vel (project-vector (v- seg-vel vel) (v- line-b pos))
+                        :pos pos))))))))
+
+(defun test-segment-vs-aabb (seg-pos seg-vel aabb-pos aabb-size)
   (declare (type vec2 seg-pos seg-vel aabb-pos aabb-size))
   (sb-int:with-float-traps-masked (:overflow :underflow :inexact)
     (let* ((scale (vec (if (= 0 (vx seg-vel)) most-positive-single-float (/ (vx seg-vel)))
@@ -22,17 +44,20 @@
                   (< (vx far) (vy near)))
         (let ((t-near (max (vx near) (vy near)))
               (t-far (min (vx far) (vy far))))
-          (unless (or (<= 1 t-near)
-                      (<= t-far 0))
+          (when (and (< t-near 1)
+                     (< 0 t-far))
             (let* ((time (alexandria:clamp t-near 0.0s0 1.0s0))
                    (normal (if (< (vy near) (vx near))
                                (vec (- (vx sign)) 0)
                                (vec 0 (- (vy sign)))))
                    (vel (v* seg-vel time)))
-              (make-hit :time time
-                        :normal normal
-                        :vel vel
-                        :pos (v+ seg-pos vel)))))))))
+              (unless (= 0 (v. normal seg-vel))
+                (make-hit :time time
+                          :normal normal
+                          :vel (if (< (vy near) (vx near))
+                                   (project-vector (v- seg-vel vel) (vec 0 1))
+                                   (project-vector (v- seg-vel vel) (vec 1 0)))
+                          :pos (v+ seg-pos vel))))))))))
 
 (defun test-aabb-vs-aabb (a-pos a-size b-pos b-size)
   (let* ((d (v- b-pos a-pos))
