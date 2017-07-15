@@ -34,6 +34,7 @@
 
 (defun test-segment-vs-aabb (seg-pos seg-vel aabb-pos aabb-size)
   (declare (type vec2 seg-pos seg-vel aabb-pos aabb-size))
+  (setf seg-pos (v+ seg-pos (v* seg-vel 0.00001)))
   (sb-int:with-float-traps-masked (:overflow :underflow :inexact)
     (let* ((scale (vec (if (= 0 (vx seg-vel)) most-positive-single-float (/ (vx seg-vel)))
                        (if (= 0 (vy seg-vel)) most-positive-single-float (/ (vy seg-vel)))))
