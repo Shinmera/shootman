@@ -8,7 +8,7 @@
                (:file "player")
                (:file "main"))
   :defsystem-depends-on (:deploy)
-  :depends-on (:trial
+  :depends-on (:trial-glfw
                :harmony-simple)
   :build-operation "deploy-op"
   :build-pathname "shootman"
