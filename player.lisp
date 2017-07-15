@@ -75,19 +75,20 @@
          (setf (direction player) (nvunit (direction player))))))))
 
 (define-handler (player tick) (ev)
-  ;; Handle death
-  (when (and (= 1 (animation player))
-             (= 3 (frame player)))
-    (maybe-reload-scene))
-  ;; Handle dash
-  (cond ((= 2 (animation player))
-         (when (= 7 (frame player))
-           (setf (status player) NIL)
-           (setf (animation player) 0)))
-        (T
-         (vsetf (vel player)
-             (vx (move-vel player))
-             (vy (move-vel player)))))
+  (case (status player)
+    (:dead
+     (when (= 3 (frame player))
+       (maybe-reload-scene)))
+    (:dash
+     (unless (v= 0 (vel player))
+       (setf (vel player) (nv* (nvunit (vel player)) 5.0)))
+     (when (= 7 (frame player))
+       (setf (status player) NIL)
+       (setf (animation player) 0)))
+    (T
+     (vsetf (vel player)
+         (vx (move-vel player))
+         (vy (move-vel player)))))
 
   (let ((nearest-hit NIL))
     (loop repeat 2
@@ -114,14 +115,18 @@
   (unless (status player)
     (setf (status player) :dash)
     (setf (animation player) 2)
-    (cond ((= 0 (vlength (vel player)))
+    (cond ((v/= 0 (vel player))
+           (vsetf (vel player)
+               (vx (move-vel player))
+               (vy (move-vel player))))
+          ((v/= 0 (direction player))
            (vsetf (vel player)
                (- (vx (direction player)))
                (- (vy (direction player)))))
           (T
            (vsetf (vel player)
-               (vx (move-vel player))
-               (vy (move-vel player)))))
+               1
+               0)))
     (setf (vel player)
           (nv* (nvunit (vel player)) 5.0))))
 
@@ -129,6 +134,7 @@
   (unless (eql (status player) :dash)
     (decf (health player))
     (when (<= (health player) 0)
+      (setf (status player) :dead)
       (setf (animation player) 1))))
 
 (defmethod hit ((player player) (wall wall) hit)
