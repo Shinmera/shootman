@@ -26,7 +26,7 @@
    :animation 0
    :name :player
    :health 6
-   :gun (make-instance 'basic-gun)))
+   :gun (make-instance 'laser-guna)))
 
 (define-handler (player gamepad-press) (ev button)
   (when (eql :home button)

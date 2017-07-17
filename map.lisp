@@ -46,6 +46,19 @@
     (w< (vec2 0 3))
     (I  (vec2 2 2))))
 
+(defun load-map-file (file)
+  (with-open-file (stream (pool-path 'shootman file) :direction :input)
+    (let* ((*package* #.*package*)
+           (list (loop for line = (read-line stream NIL)
+                       while (and line (string/= line ""))
+                       collect (with-input-from-string (stream line)
+                                 (loop for symbol = (read stream NIL)
+                                       while symbol
+                                       collect symbol)))))
+      (make-array (list (length list)
+                        (length (first list)))
+                  :initial-contents list))))
+
 (progn
   (defun create-map-from-array (array scene)
     (destructuring-bind (h w) (array-dimensions array)
@@ -67,7 +80,8 @@
                   (-)
                   (_
                    (when (< (random 100) 2)
-                     (enter (make-instance 'tomato :location (v- loc (vec cx cy 0)))
+                     (enter (make-instance (alexandria:random-elt '(robot-a robot-b))
+                                           :location (v- loc (vec cx cy 0)))
                             scene))
                    (enter (make-instance 'floor-drawable :location loc
                                                          :tile (alexandria:random-elt

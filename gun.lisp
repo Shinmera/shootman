@@ -47,20 +47,24 @@
                          (- (random (bullet-spread gun)) (/ (bullet-spread gun) 2)))
         do (let ((dir (vrot (vxy_ direction) +vz+ (deg->rad (+ phi spread)))))
              (unless (v= 0 dir) (nvunit dir))
-             (let ((vel (nv* dir (bullet-velocity gun))))
+             (let* ((vel (nv* dir (bullet-velocity gun)))
+                    (angle (acos (vx (vunit vel)))))
+               (when (< (vy vel) 0) (setf angle (- angle)))
                (enter (load (make-instance (bullet-type gun)
+                                           :angle angle
                                            :location (v+ from (v* dir 5))
                                            :velocity vel
                                            :affinity affinity))
                       *loop*)))))
 
-(define-shader-subject bullet (base-entity)
+(define-shader-subject bullet (base-entity axis-rotated-entity)
   ((affinity :initarg :affinity :accessor affinity))
   (:default-initargs
    :texture (asset 'shootman 'bullet)
    :size (vec2 16 16)
    :vertex-array (asset 'shootman '16x)
-   :affinity 'bullet))
+   :affinity 'bullet
+   :axis +vz+))
 
 (define-handler (bullet tick) (ev)
   (nv+ (location bullet) (vel bullet))
@@ -129,3 +133,17 @@
          :from (location gun-carrier)
          :direction (direction gun-carrier)
          :affinity (if (typep gun-carrier 'enemy) 'enemy 'player)))
+
+
+(define-shader-subject laser-gun (basic-gun)
+  ()
+  (:default-initargs
+   :bullet-type 'laser
+   :bullet-velocity 5
+   :tile (vec 1 0)
+   :sound (pool-path 'shootman #p"laser.mp3")))
+
+(define-shader-subject laser (bullet)
+  ()
+  (:default-initargs
+   :tile (vec 1 1)))
